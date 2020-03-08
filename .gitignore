@@ -1,0 +1,4 @@
+#ignore execute file
+main.o
+cp_function.o
+breakout.exe
