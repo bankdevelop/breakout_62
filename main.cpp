@@ -16,23 +16,34 @@ Texture brick_texture, background_texture;
 Font big_font, small_font;
 
 // Structure for storing info for objects, i.e. Paddle, Brick, Ball.
-typedef struct
-{
+class Object {
+public:
    float pos_x, pos_y;
    float vel_x, vel_y;
    float width, height;
-   int active;
-} Object;
+   bool active;
 
-// Collision Detection between objects a and b
-int collide(Object a, Object b)
-{
-   if (a.pos_x + a.width < b.pos_x || b.pos_x + b.width < a.pos_x ||
-       a.pos_y + a.height < b.pos_y || b.pos_y + b.height < a.pos_y)
-      return False;
-   else
-      return True;
-}
+   //constructor on Object
+   Object(){
+      Object(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
+   }
+   Object(float in_pos_x, float in_pos_y, float in_vel_x, float in_vel_y, 
+          float in_width, float in_height, bool in_active)
+    : pos_x(in_pos_x), pos_y(in_pos_y), vel_x(in_vel_x), vel_y(in_vel_y), 
+      width(in_width), height(in_height), active(in_active) {}
+
+   //method
+   // Collision Detection between objects a and b
+   int collide(Object b)
+   {
+      if (this->pos_x + this->width < b.pos_x || b.pos_x + b.width < this->pos_x ||
+         this->pos_y + this->height < b.pos_y || b.pos_y + b.height < this->pos_y)
+         return False;
+      else
+         return True;
+   }
+
+};
 
 // Initial routine to load sounds, textures, and fonts.
 int game_init()
@@ -195,7 +206,7 @@ int main(int argc, char *args[])
       }
 
       for (int n = 0; n < n_bricks; n++) {
-         if (bricks[n].active && collide(ball, bricks[n])) {
+         if (bricks[n].active && ball.collide(bricks[n])) {
             cpPlaySound(hit_brick_sound);
             ball.vel_y = -ball.vel_y;
             bricks[n].active = False;
@@ -205,7 +216,7 @@ int main(int argc, char *args[])
          }
       }
 
-      if (collide(ball, paddle)) {
+      if (ball.collide(paddle)) {
          cpPlaySound(hit_paddle_sound);
          ball.vel_y = -ball.vel_y;
       }
