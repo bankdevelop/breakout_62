@@ -1,4 +1,4 @@
 #ignore execute file
 main.o
-cp_function.o
+cp_functions.o
 breakout.exe
