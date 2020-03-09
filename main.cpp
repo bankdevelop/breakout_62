@@ -8,7 +8,10 @@
 #define WindowTitle "Breakout 62"
 #define WindowWidth 800
 #define WindowHeight 700
-int level = 0;
+#define MaxLevel 5
+
+//variable for check my current level
+int level = 1;
 
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
@@ -97,15 +100,49 @@ void *ghostBot(void *ptr)
    }
 }
 
+void waitQuitEvent(bool &running, Event event){
+   while (True) {
+      cbEventListener(&event);
+      if (event.type == QUIT ||
+            event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+         running = False;
+         break;
+      }
+   }
+}
+
+void nextLevel(int &n_hits, int goal, bool &running, Event event){
+   if(n_hits >= goal){
+      cpPlaySound(end_sound);
+      n_hits = 0;
+      level++;
+      //running = false for recreate map
+      running=False;
+   }
+   //if go to MaxLevel, End while loop level
+   if(level > MaxLevel) waitQuitEvent(running, event);
+}
+
+//checking game ending
+void endGame(float ball_y, float ball_width, int &n_hits, int n_bricks, int h_bricks, bool &running, Event event){
+   if (ball_y + ball_width > WindowHeight) {
+      cpPlaySound(end_sound);
+      cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
+      cpSwapBuffers();
+      waitQuitEvent(running, event);
+   }
+}
+
 int main(int argc, char *args[])
 {
    enum {
       BALL_VEL_Y = -5,
       PADDLE_VEL_X = 7
    };
-   int running, n_bricks = 15, n_hits = 0, score = 0;
+   bool running;
+   int h_bricks = 6, n_bricks = 15, n_hits = 0, score = 0;
    char msg[80];
-   Object bricks[n_bricks];
+   Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
    Object paddle = {WindowWidth / 2 - 62, WindowHeight - 50, 0, 0, 124, 18, True};
    Event event;
@@ -120,115 +157,124 @@ int main(int argc, char *args[])
       exit(1);
    }
 
-   for (int n = 0, x = -10, y = 80; n < n_bricks; n++) {
-      bricks[n].pos_x = x;
-      bricks[n].pos_y = y;
-      bricks[n].width = 55;
-      bricks[n].height = 18;
-      bricks[n].active = True;
-      x += bricks[n].width;
-   }
-
    ghost_texture = cpLoadTexture("ghost.png");
    pthread_create(&ghost_thread, NULL, ghostBot, (void *)NULL);
 
-   running = True;
-   while (running) {
-      cpClearScreen();
-      cpDrawTexture(255, 255, 255,
-                    0, 0, WindowWidth, WindowHeight, background_texture);
-      cpDrawTexture(255, 255, 255,
-                    paddle.pos_x, paddle.pos_y, paddle.width, paddle.height, paddle_texture);
-      cpDrawTexture(255, 255, 255,
-                    ball.pos_x, ball.pos_y, ball.width, ball.height, ball_texture);
-      cpDrawTexture(255, 255, 255,
-                    ghost.pos_x, ghost.pos_y, ghost.width, ghost.height, ghost_texture);
-      ready_to_swap = 1;
-      for (int n = 0; n < n_bricks; n++) {
-         if (bricks[n].active)
-            cpDrawTexture(255, 255, 255,
-                          bricks[n].pos_x, bricks[n].pos_y, bricks[n].width, bricks[n].height,
-                          brick_texture);
+   int lap_current = 1;
+   //While Loop level -> Check in case we not pass to next level but lose, lap_current and level will not equal
+   while(lap_current == level){
+
+      //create new bricks
+      for(int h = 0, y = 80; h<h_bricks; h++){
+         int x = -10;
+         int bricks_width = 55;
+         int bricks_height = 18;
+         for (int n = 0; n < n_bricks; n++) {
+               bricks[h][n].pos_x = x;
+               bricks[h][n].pos_y = y;
+               bricks[h][n].width = bricks_width;
+               bricks[h][n].height = bricks_height;
+               bricks[h][n].active = True;
+               x += bricks[h][n].width;
+         }
+         y += bricks_height;
       }
-      sprintf(msg, "คะแนน %d", score);
-      cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
-      
-      //check END game
-      if (ball.pos_y + ball.width > WindowHeight || n_hits == n_bricks) {
-         cpPlaySound(end_sound);
-         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
+
+      running = True;
+      //Loop in each Level
+      while (running) {
+         cpClearScreen();
+         cpDrawTexture(255, 255, 255,
+                     0, 0, WindowWidth, WindowHeight, background_texture);
+         cpDrawTexture(255, 255, 255,
+                     paddle.pos_x, paddle.pos_y, paddle.width, paddle.height, paddle_texture);
+         cpDrawTexture(255, 255, 255,
+                     ball.pos_x, ball.pos_y, ball.width, ball.height, ball_texture);
+         cpDrawTexture(255, 255, 255,
+                     ghost.pos_x, ghost.pos_y, ghost.width, ghost.height, ghost_texture);
+         ready_to_swap = 1;
+
+         for(int h = 0; h<h_bricks; h++){
+            for (int n = 0; n < n_bricks; n++) {
+               if (bricks[h][n].active)
+                  cpDrawTexture(255, 255, 255,
+                              bricks[h][n].pos_x, bricks[h][n].pos_y, bricks[h][n].width, bricks[h][n].height,
+                              brick_texture);
+            }
+         }
+         sprintf(msg, "คะแนน %d | Level %d", score, level);
+         cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
+         
+         //check END game
+         endGame(ball.pos_y, ball.width, n_hits, n_bricks, h_bricks, running, event);
          cpSwapBuffers();
-         while (True) {
-            cbEventListener(&event);
+         
+         while (cbEventListener(&event)) {
             if (event.type == QUIT ||
-                event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+               event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
                running = False;
                break;
             }
+
+            if (event.type == KEYDOWN) {
+               if (event.key.keysym.sym == K_LEFT)
+                  paddle.vel_x = -abs(PADDLE_VEL_X);
+               if (event.key.keysym.sym == K_RIGHT)
+                  paddle.vel_x = abs(PADDLE_VEL_X);
+            }
+            else if (event.type == KEYUP) {
+               if (event.key.keysym.sym == K_LEFT)
+                  paddle.vel_x = 0;
+               if (event.key.keysym.sym == K_RIGHT)
+                  paddle.vel_x = 0;
+            }
          }
-      }
-      cpSwapBuffers();
+         paddle.pos_x += paddle.vel_x;
 
-      while (cbEventListener(&event)) {
-         if (event.type == QUIT ||
-             event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
-            running = False;
-            break;
-         }
+         if (paddle.pos_x < 0)
+            paddle.pos_x = 0;
+         if (paddle.pos_x + paddle.width > WindowWidth)
+            paddle.pos_x = WindowWidth - paddle.width;
 
-         if (event.type == KEYDOWN) {
-            if (event.key.keysym.sym == K_LEFT)
-               paddle.vel_x = -abs(PADDLE_VEL_X);
-            if (event.key.keysym.sym == K_RIGHT)
-               paddle.vel_x = abs(PADDLE_VEL_X);
-         }
-         else if (event.type == KEYUP) {
-            if (event.key.keysym.sym == K_LEFT)
-               paddle.vel_x = 0;
-            if (event.key.keysym.sym == K_RIGHT)
-               paddle.vel_x = 0;
-         }
-      }
-      paddle.pos_x += paddle.vel_x;
+         //move ball object
+         ball.pos_x += ball.vel_x;
+         ball.pos_y += ball.vel_y;
 
-      if (paddle.pos_x < 0)
-         paddle.pos_x = 0;
-      if (paddle.pos_x + paddle.width > WindowWidth)
-         paddle.pos_x = WindowWidth - paddle.width;
+         if (ball.pos_x < 0 || ball.pos_x + ball.width > WindowWidth)
+            ball.vel_x = -ball.vel_x;
 
-      //move ball object
-      ball.pos_x += ball.vel_x;
-      ball.pos_y += ball.vel_y;
-
-      if (ball.pos_x < 0 || ball.pos_x + ball.width > WindowWidth)
-         ball.vel_x = -ball.vel_x;
-
-      if (ball.pos_y < 0) {
-         cpPlaySound(hit_top_sound);
-         ball.vel_y = -ball.vel_y;
-      }
-
-      //check ball hit brinks
-      for (int n = 0; n < n_bricks; n++) {
-         if (bricks[n].active && ball.collide(bricks[n])) {
-            cpPlaySound(hit_brick_sound);
+         if (ball.pos_y < 0) {
+            cpPlaySound(hit_top_sound);
             ball.vel_y = -ball.vel_y;
-            bricks[n].active = False;
-            n_hits++;
-            score += 10;
-            break;
          }
-      }
 
-      //check ball hit paddle
-      if (ball.collide(paddle)) {
-         cpPlaySound(hit_paddle_sound);
-         ball.vel_x = abs(ball.vel_x-paddle.vel_x)*(90.0/100);
-         ball.vel_y = -ball.vel_y;
-      }
+         //check ball hit brinks
+         for(int h = 0; h<h_bricks; h++){
+            for (int n = 0; n < n_bricks; n++) {
+               if (bricks[h][n].active && ball.collide(bricks[h][n])) {
+                  cpPlaySound(hit_brick_sound);
+                  ball.vel_y = -ball.vel_y;
+                  bricks[h][n].active = False;
+                  n_hits++;
+                  score += 10;
+                  nextLevel(n_hits, (n_bricks*h_bricks), running, event);
+                  break;
+               }
+            }
+         }
 
-      cpDelay(10);
+         //check ball hit paddle
+         if (ball.collide(paddle)) {
+            cpPlaySound(hit_paddle_sound);
+            ball.vel_x = ball.vel_x+paddle.vel_x;
+            ball.vel_y = -ball.vel_y;
+         }
+
+         cpDelay(10);
+      }
+      lap_current++;
    }
+
    cpCleanUp();
    return 0;
 }
