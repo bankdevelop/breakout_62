@@ -209,6 +209,7 @@ int main(int argc, char *args[])
          endGame(ball.pos_y, ball.width, n_hits, n_bricks, h_bricks, running, event);
          cpSwapBuffers();
          
+         //paddle check event
          while (cbEventListener(&event)) {
             if (event.type == QUIT ||
                event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
@@ -218,9 +219,9 @@ int main(int argc, char *args[])
 
             if (event.type == KEYDOWN) {
                if (event.key.keysym.sym == K_LEFT)
-                  paddle.vel_x = -abs(PADDLE_VEL_X);
+                  paddle.vel_x -= 1.2;
                if (event.key.keysym.sym == K_RIGHT)
-                  paddle.vel_x = abs(PADDLE_VEL_X);
+                  paddle.vel_x += 1.2;
             }
             else if (event.type == KEYUP) {
                if (event.key.keysym.sym == K_LEFT)
@@ -229,7 +230,7 @@ int main(int argc, char *args[])
                   paddle.vel_x = 0;
             }
          }
-         paddle.pos_x += paddle.vel_x;
+         paddle.pos_x += PADDLE_VEL_X*(paddle.vel_x==0?0:(paddle.vel_x>0?1:-1));
 
          if (paddle.pos_x < 0)
             paddle.pos_x = 0;
