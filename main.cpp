@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
 #include <unistd.h>
 #include <pthread.h>
 #include "cp_functions.h"
@@ -13,11 +13,23 @@
 //variable for check my current level
 int level = 1;
 
+// check game running
+bool running;
+
+//inital speed ball and paddle
+enum {
+   BALL_VEL_Y = -5,
+   PADDLE_SPEED_MOVE = 7,
+   PADDLE_SPEED_VECTOR = 2
+};
+
+
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
 Texture paddle_texture, ball_texture;
 Texture brick_texture, background_texture;
 Font big_font, small_font;
+Event event;
 
 // Structure for storing info for objects, i.e. Paddle, Brick, Ball.
 class Object {
@@ -37,7 +49,6 @@ public:
       width(in_width), height(in_height), active(in_active) {}
 
    //method
-   // Collision Detection between objects a and b
    int collide(Object b)
    {
       if (this->pos_x + this->width < b.pos_x || b.pos_x + b.width < this->pos_x ||
@@ -45,6 +56,9 @@ public:
          return False;
       else
          return True;
+   }
+   void move(float x, float y){
+      
    }
 
 };
@@ -100,7 +114,7 @@ void *ghostBot(void *ptr)
    }
 }
 
-void waitQuitEvent(bool &running, Event event){
+void waitQuitEvent(){
    while (True) {
       cbEventListener(&event);
       if (event.type == QUIT ||
@@ -111,7 +125,7 @@ void waitQuitEvent(bool &running, Event event){
    }
 }
 
-void nextLevel(int &n_hits, int goal, bool &running, Event event){
+void nextLevel(int &n_hits, int goal){
    if(n_hits >= goal){
       cpPlaySound(end_sound);
       n_hits = 0;
@@ -120,32 +134,58 @@ void nextLevel(int &n_hits, int goal, bool &running, Event event){
       running=False;
    }
    //if go to MaxLevel, End while loop level
-   if(level > MaxLevel) waitQuitEvent(running, event);
+   if(level > MaxLevel) waitQuitEvent();
 }
 
 //checking game ending
-void endGame(float ball_y, float ball_width, int &n_hits, int n_bricks, int h_bricks, bool &running, Event event){
+void endGame(float ball_y, float ball_width, int &n_hits, int n_bricks, int h_bricks){
    if (ball_y + ball_width > WindowHeight) {
       cpPlaySound(end_sound);
       cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
       cpSwapBuffers();
-      waitQuitEvent(running, event);
+      waitQuitEvent();
    }
 }
 
+void paddleCheckEvent(Object &paddle){
+   //check input keyboard
+   while (cbEventListener(&event)) {
+      if (event.type == QUIT ||
+         event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+         running = False;
+         break;
+      }
+      if (event.type == KEYDOWN) {
+         if (event.key.keysym.sym == K_LEFT)
+            paddle.vel_x -= PADDLE_SPEED_VECTOR;
+         if (event.key.keysym.sym == K_RIGHT)
+            paddle.vel_x += PADDLE_SPEED_VECTOR;
+      }
+      else if (event.type == KEYUP) {
+         if (event.key.keysym.sym == K_LEFT)
+            paddle.vel_x = 0;
+         if (event.key.keysym.sym == K_RIGHT)
+            paddle.vel_x = 0;
+      }
+   }
+   //move paddle
+   paddle.pos_x += PADDLE_SPEED_MOVE*(paddle.vel_x==0?0:(paddle.vel_x>0?1:-1));
+
+   //check paddle not out of edge
+   if (paddle.pos_x < 0)
+      paddle.pos_x = 0;
+   if (paddle.pos_x + paddle.width > WindowWidth)
+      paddle.pos_x = WindowWidth - paddle.width;
+}
+
+
 int main(int argc, char *args[])
 {
-   enum {
-      BALL_VEL_Y = -5,
-      PADDLE_VEL_X = 7
-   };
-   bool running;
    int h_bricks = 6, n_bricks = 15, n_hits = 0, score = 0;
    char msg[80];
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
    Object paddle = {WindowWidth / 2 - 62, WindowHeight - 50, 0, 0, 124, 18, True};
-   Event event;
 
    if (!cpInit(WindowTitle, WindowWidth, WindowHeight)) {
       fprintf(stderr, "Window initialization failed!\n");
@@ -206,36 +246,11 @@ int main(int argc, char *args[])
          cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
          
          //check END game
-         endGame(ball.pos_y, ball.width, n_hits, n_bricks, h_bricks, running, event);
+         endGame(ball.pos_y, ball.width, n_hits, n_bricks, h_bricks);
          cpSwapBuffers();
          
          //paddle check event
-         while (cbEventListener(&event)) {
-            if (event.type == QUIT ||
-               event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
-               running = False;
-               break;
-            }
-
-            if (event.type == KEYDOWN) {
-               if (event.key.keysym.sym == K_LEFT)
-                  paddle.vel_x -= 1.2;
-               if (event.key.keysym.sym == K_RIGHT)
-                  paddle.vel_x += 1.2;
-            }
-            else if (event.type == KEYUP) {
-               if (event.key.keysym.sym == K_LEFT)
-                  paddle.vel_x = 0;
-               if (event.key.keysym.sym == K_RIGHT)
-                  paddle.vel_x = 0;
-            }
-         }
-         paddle.pos_x += PADDLE_VEL_X*(paddle.vel_x==0?0:(paddle.vel_x>0?1:-1));
-
-         if (paddle.pos_x < 0)
-            paddle.pos_x = 0;
-         if (paddle.pos_x + paddle.width > WindowWidth)
-            paddle.pos_x = WindowWidth - paddle.width;
+         paddleCheckEvent(paddle);
 
          //move ball object
          ball.pos_x += ball.vel_x;
@@ -258,7 +273,7 @@ int main(int argc, char *args[])
                   bricks[h][n].active = False;
                   n_hits++;
                   score += 10;
-                  nextLevel(n_hits, (n_bricks*h_bricks), running, event);
+                  nextLevel(n_hits, (n_bricks*h_bricks));
                   break;
                }
             }
