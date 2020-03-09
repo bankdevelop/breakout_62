@@ -8,6 +8,7 @@
 #define WindowTitle "Breakout 62"
 #define WindowWidth 800
 #define WindowHeight 700
+int level = 0;
 
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
@@ -152,9 +153,10 @@ int main(int argc, char *args[])
       sprintf(msg, "คะแนน %d", score);
       cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
       
+      //check END game
       if (ball.pos_y + ball.width > WindowHeight || n_hits == n_bricks) {
          cpPlaySound(end_sound);
-         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน", big_font, 1);
+         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
          cpSwapBuffers();
          while (True) {
             cbEventListener(&event);
@@ -194,6 +196,7 @@ int main(int argc, char *args[])
       if (paddle.pos_x + paddle.width > WindowWidth)
          paddle.pos_x = WindowWidth - paddle.width;
 
+      //move ball object
       ball.pos_x += ball.vel_x;
       ball.pos_y += ball.vel_y;
 
@@ -205,6 +208,7 @@ int main(int argc, char *args[])
          ball.vel_y = -ball.vel_y;
       }
 
+      //check ball hit brinks
       for (int n = 0; n < n_bricks; n++) {
          if (bricks[n].active && ball.collide(bricks[n])) {
             cpPlaySound(hit_brick_sound);
@@ -216,8 +220,10 @@ int main(int argc, char *args[])
          }
       }
 
+      //check ball hit paddle
       if (ball.collide(paddle)) {
          cpPlaySound(hit_paddle_sound);
+         ball.vel_x = abs(ball.vel_x-paddle.vel_x)*(90.0/100);
          ball.vel_y = -ball.vel_y;
       }
 
