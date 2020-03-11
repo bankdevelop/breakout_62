@@ -31,6 +31,9 @@ Texture brick_texture, background_texture;
 Font big_font, small_font;
 Event event;
 
+
+//---------------------------------------Class---------------------------------------//
+
 // Structure for storing info for objects, i.e. Paddle, Brick, Ball.
 class Object {
 public:
@@ -58,10 +61,32 @@ public:
          return True;
    }
    void move(float x, float y){
-      
+      ;
    }
 
 };
+
+class Brick: public Object{
+   Brick(){
+      Object(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
+   }
+   Brick(float in_pos_x, float in_pos_y, float in_vel_x, float in_vel_y, 
+         float in_width, float in_height, bool in_active) {
+      Object(in_pos_x, in_pos_y, in_vel_x, in_vel_y, in_width, in_height, in_active);
+   }
+
+   int collide(Object b)
+   {
+      if (this->pos_x + this->width < b.pos_x || b.pos_x + b.width < this->pos_x ||
+         this->pos_y + this->height < b.pos_y || b.pos_y + b.height < this->pos_y)
+         return False;
+      else
+         return True;
+   }
+};
+
+
+//---------------------------------------functions---------------------------------------//
 
 // Initial routine to load sounds, textures, and fonts.
 int game_init()
