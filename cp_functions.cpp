@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <time.h> 
 #include "cp_functions.h"
 
 SDL_Window *window = NULL;
@@ -231,4 +232,11 @@ void cpDrawText(int r, int g, int b,
 void cpClearScreen()
 {
    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+double goRandom(){
+   srand(time(0));
+   double tmp = rand(); 
+   while(tmp>1) tmp/=10.0;
+   return tmp;
 }

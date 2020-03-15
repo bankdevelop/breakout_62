@@ -17,6 +17,8 @@
 #define K_ESCAPE SDLK_ESCAPE
 #define K_LEFT SDLK_LEFT
 #define K_RIGHT SDLK_RIGHT
+#define K_KP_1 SDLK_KP_1
+#define K_SPACE SDLK_SPACE
 
 typedef TTF_Font *Font;
 typedef Mix_Music *Music;
@@ -48,5 +50,6 @@ void cpDrawTexture(int r, int g, int b,
 void cpDrawText(int r, int g, int b,
                 int x, int y, const char *text, Font font, int center);
 void cpClearScreen();
+double goRandom();
 
 #endif // __CP_FUNCTIONS_H__

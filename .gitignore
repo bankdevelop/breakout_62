@@ -1,5 +1,5 @@
 #ignore execute file
 main.o
 cp_functions.o
-object_class.o
+page_functions.o
 breakout.exe

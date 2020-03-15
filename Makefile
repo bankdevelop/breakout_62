@@ -8,11 +8,14 @@ all: breakout.exe
 cp_functions.o: cp_functions.cpp
 	$(CC) $(CFLAGS) -c cp_functions.cpp
 
+page_functions.o: page_functions.cpp
+	$(CC) $(CFLAGS) -c page_functions.cpp
+
 main.o: main.cpp
 	$(CC) $(CFLAGS) -c main.cpp
 
-breakout.exe: cp_functions.o main.o
-	$(CC) -o breakout.exe cp_functions.o main.o $(LDFLAGS)
+breakout.exe: cp_functions.o page_functions.o main.o 
+	$(CC) -o breakout.exe cp_functions.o page_functions.o main.o $(LDFLAGS)
 
 clean: 
 	rm -f *.o breakout.exe

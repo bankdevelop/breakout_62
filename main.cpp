@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "cp_functions.h"
+#include "page_functions.h"
 
 #define WindowTitle "Breakout 62"
 #define WindowWidth 800
@@ -22,7 +23,7 @@ int life = 3;
 //inital speed ball and paddle
 float BALL_VEL_Y = (-5*level);
 float PADDLE_SPEED_MOVE = 7*level;
-float PADDLE_SPEED_VECTOR = 1;
+float PADDLE_SPEED_VECTOR = 1*level;
 
 
 Sound hit_paddle_sound, hit_brick_sound;
@@ -36,7 +37,8 @@ Event event;
 //---------------------------------------Class---------------------------------------//
 
 // Structure for storing info for objects, i.e. Paddle, Brick, Ball.
-class Object {
+class Object
+{
 public:
    float pos_x, pos_y;
    float vel_x, vel_y;
@@ -67,7 +69,8 @@ public:
 
 };
 
-class Brick: public Object{
+class Brick: public Object
+{
    int type = 0;
 
    Brick(){
@@ -146,18 +149,20 @@ void *ghostBot(void *ptr)
    }
 }
 
-void waitQuitEvent(){
+void waitQuitEvent()
+{
    while (True) {
       cbEventListener(&event);
       if (event.type == QUIT ||
-            event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+            event.type == KEYUP && event.key.keysym.sym == K_ESCAPE || event.key.keysym.sym == K_KP_1) {
          running = False;
          break;
       }
    }
 }
 
-void nextLevel(int &n_hits, int goal){
+void nextLevel(int &n_hits, int goal)
+{
    if(n_hits >= goal){
       cpPlaySound(end_sound);
       n_hits = 0;
@@ -170,19 +175,27 @@ void nextLevel(int &n_hits, int goal){
 }
 
 //checking game ending
-void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks){
+void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks)
+{
    if (ball.pos_y + ball.width > WindowHeight) {
       if(--life==0){
          cpPlaySound(end_sound);
-         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
+         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน", big_font, 1);
          cpSwapBuffers();
          waitQuitEvent();
       }else{
-         char msg[80];
+         char msg[80], msg2[80];
          //announce remain life
          cpPlaySound(end_sound);
          sprintf(msg, "เหลือชีวิตอยู่ %d", life);
+         sprintf(msg2, "กด spacebar เพื่อเล่นต่อ");
          cpDrawText(255, 255, 0, 400, 350, msg, big_font, 1);
+         cpDrawText(255, 255, 0, 400, 350+40, msg2, big_font, 1);
+         cpSwapBuffers();
+         while (True) {
+            cbEventListener(&event);
+            if(event.key.keysym.sym == K_SPACE) break;
+         }
          ball.pos_x = WindowWidth / 2 - 12;
          ball.pos_y = 350;
          ball.vel_x = 0;
@@ -192,7 +205,8 @@ void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks){
    }
 }
 
-void paddleCheckEvent(Object &paddle){
+void paddleCheckEvent(Object &paddle)
+{
    //check input keyboard
    while (cbEventListener(&event)) {
       if (event.type == QUIT ||
@@ -224,7 +238,8 @@ void paddleCheckEvent(Object &paddle){
 }
 
 void intialBrick(Object &bricks, double x, double y, 
-                  int bricks_width, int bricks_height, bool active){
+                  int bricks_width, int bricks_height, bool active)
+{
    bricks.pos_x = x;
    bricks.pos_y = y;
    bricks.width = bricks_width;
@@ -232,9 +247,10 @@ void intialBrick(Object &bricks, double x, double y,
    bricks.active = active;
 }
 
-int main(int argc, char *args[])
+int runGame()
 {
    int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
+   /* resetting value intial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
    char msg[80];
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
@@ -308,9 +324,9 @@ int main(int argc, char *args[])
          ball.pos_x += ball.vel_x;
          ball.pos_y += ball.vel_y;
 
+         //check ball hit edge
          if (ball.pos_x < 0 || ball.pos_x + ball.width > WindowWidth)
             ball.vel_x = -ball.vel_x;
-
          if (ball.pos_y < 0) {
             cpPlaySound(hit_top_sound);
             ball.vel_y = -ball.vel_y;
@@ -346,3 +362,11 @@ int main(int argc, char *args[])
    cpCleanUp();
    return 0;
 }
+
+int main(int argc, char *args[])
+{
+   //startPage(WindowTitle, WindowWidth, WindowHeight);
+   runGame();
+   return 0;
+}
+
