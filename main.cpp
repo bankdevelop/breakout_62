@@ -16,12 +16,13 @@ int level = 1;
 // check game running
 bool running;
 
+//Life
+int life = 3;
+
 //inital speed ball and paddle
-enum {
-   BALL_VEL_Y = -5,
-   PADDLE_SPEED_MOVE = 7,
-   PADDLE_SPEED_VECTOR = 2
-};
+float BALL_VEL_Y = (-5*level);
+float PADDLE_SPEED_MOVE = 7*level;
+float PADDLE_SPEED_VECTOR = 1;
 
 
 Sound hit_paddle_sound, hit_brick_sound;
@@ -40,14 +41,14 @@ public:
    float pos_x, pos_y;
    float vel_x, vel_y;
    float width, height;
-   bool active;
+   int active;
 
    //constructor on Object
    Object(){
       Object(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
    }
    Object(float in_pos_x, float in_pos_y, float in_vel_x, float in_vel_y, 
-          float in_width, float in_height, bool in_active)
+          float in_width, float in_height, int in_active)
     : pos_x(in_pos_x), pos_y(in_pos_y), vel_x(in_vel_x), vel_y(in_vel_y), 
       width(in_width), height(in_height), active(in_active) {}
 
@@ -67,21 +68,27 @@ public:
 };
 
 class Brick: public Object{
+   int type = 0;
+
    Brick(){
       Object(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
    }
    Brick(float in_pos_x, float in_pos_y, float in_vel_x, float in_vel_y, 
-         float in_width, float in_height, bool in_active) {
+         float in_width, float in_height, int in_active) {
       Object(in_pos_x, in_pos_y, in_vel_x, in_vel_y, in_width, in_height, in_active);
    }
 
-   int collide(Object b)
+   bool collide(Object b)
    {
-      if (this->pos_x + this->width < b.pos_x || b.pos_x + b.width < this->pos_x ||
-         this->pos_y + this->height < b.pos_y || b.pos_y + b.height < this->pos_y)
-         return False;
-      else
-         return True;
+      if( this->active > 0){
+         if (this->pos_x + this->width < b.pos_x || b.pos_x + b.width < this->pos_x ||
+            this->pos_y + this->height < b.pos_y || b.pos_y + b.height < this->pos_y){
+            return false;
+         }else{
+            this->active--;
+            return true;
+         }
+      }
    }
 };
 
@@ -155,7 +162,7 @@ void nextLevel(int &n_hits, int goal){
       cpPlaySound(end_sound);
       n_hits = 0;
       level++;
-      //running = false for recreate map
+      //running = false for resetgame
       running=False;
    }
    //if go to MaxLevel, End while loop level
@@ -163,12 +170,25 @@ void nextLevel(int &n_hits, int goal){
 }
 
 //checking game ending
-void endGame(float ball_y, float ball_width, int &n_hits, int n_bricks, int h_bricks){
-   if (ball_y + ball_width > WindowHeight) {
-      cpPlaySound(end_sound);
-      cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
-      cpSwapBuffers();
-      waitQuitEvent();
+void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks){
+   if (ball.pos_y + ball.width > WindowHeight) {
+      if(--life==0){
+         cpPlaySound(end_sound);
+         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน GG", big_font, 1);
+         cpSwapBuffers();
+         waitQuitEvent();
+      }else{
+         char msg[80];
+         //announce remain life
+         cpPlaySound(end_sound);
+         sprintf(msg, "เหลือชีวิตอยู่ %d", life);
+         cpDrawText(255, 255, 0, 400, 350, msg, big_font, 1);
+         ball.pos_x = WindowWidth / 2 - 12;
+         ball.pos_y = 350;
+         ball.vel_x = 0;
+         ball.vel_y = -BALL_VEL_Y;
+         return;
+      }
    }
 }
 
@@ -203,10 +223,18 @@ void paddleCheckEvent(Object &paddle){
       paddle.pos_x = WindowWidth - paddle.width;
 }
 
+void intialBrick(Object &bricks, double x, double y, 
+                  int bricks_width, int bricks_height, bool active){
+   bricks.pos_x = x;
+   bricks.pos_y = y;
+   bricks.width = bricks_width;
+   bricks.height = bricks_height;
+   bricks.active = active;
+}
 
 int main(int argc, char *args[])
 {
-   int h_bricks = 6, n_bricks = 15, n_hits = 0, score = 0;
+   int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
    char msg[80];
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
@@ -235,11 +263,7 @@ int main(int argc, char *args[])
          int bricks_width = 55;
          int bricks_height = 18;
          for (int n = 0; n < n_bricks; n++) {
-               bricks[h][n].pos_x = x;
-               bricks[h][n].pos_y = y;
-               bricks[h][n].width = bricks_width;
-               bricks[h][n].height = bricks_height;
-               bricks[h][n].active = True;
+               intialBrick(bricks[h][n], x, y, bricks_width, bricks_height, True);
                x += bricks[h][n].width;
          }
          y += bricks_height;
@@ -259,6 +283,7 @@ int main(int argc, char *args[])
                      ghost.pos_x, ghost.pos_y, ghost.width, ghost.height, ghost_texture);
          ready_to_swap = 1;
 
+         //draw brick Texture
          for(int h = 0; h<h_bricks; h++){
             for (int n = 0; n < n_bricks; n++) {
                if (bricks[h][n].active)
@@ -267,11 +292,13 @@ int main(int argc, char *args[])
                               brick_texture);
             }
          }
-         sprintf(msg, "คะแนน %d | Level %d", score, level);
+
+         //announce point & level
+         sprintf(msg, "คะแนน %d | Level %d | Life %d", score, level, life);
          cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
          
          //check END game
-         endGame(ball.pos_y, ball.width, n_hits, n_bricks, h_bricks);
+         endGame(ball, n_hits, n_bricks, h_bricks);
          cpSwapBuffers();
          
          //paddle check event
