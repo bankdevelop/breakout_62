@@ -13,6 +13,7 @@
 
 //variable for check my current level
 int level = 1;
+int wantQuit = 0; // use case type key QUIT -- in high function can't out loop just break // so we use variable to quit
 
 // check game running
 bool running;
@@ -155,6 +156,7 @@ void waitQuitEvent()
       cbEventListener(&event);
       if (event.type == QUIT ||
             event.type == KEYUP && event.key.keysym.sym == K_ESCAPE || event.key.keysym.sym == K_KP_1) {
+         wantQuit = True;
          running = False;
          break;
       }
@@ -209,6 +211,7 @@ void paddleCheckEvent(Object &paddle)
    while (cbEventListener(&event)) {
       if (event.type == QUIT ||
          event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+         wantQuit = True;
          running = False;
          break;
       }
@@ -253,11 +256,6 @@ int runGame()
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
    Object paddle = {WindowWidth / 2 - 62, WindowHeight - 50, 0, 0, 124, 18, True};
-
-   if (!cpInit(WindowTitle, WindowWidth, WindowHeight)) {
-      fprintf(stderr, "Window initialization failed!\n");
-      exit(1);
-   }
 
    if (!game_init()) {
       fprintf(stderr, "Game initialization failed!\n");
@@ -357,20 +355,26 @@ int runGame()
       lap_current++;
    }
 
-   return 0;
+   return !wantQuit;
 }
 
 int main(int argc, char *args[])
 {
-   
-   startPage(WindowTitle, WindowWidth, WindowHeight);
-   /*int status; // Status show current menu that we are
+   if (!cpInit(WindowTitle, WindowWidth, WindowHeight)) {
+      fprintf(stderr, "Window initialization failed!\n");
+      exit(1);
+   }
+
+   int status = 1; // Status show current menu that we are
 
    while(True){
-      status =  startPage(WindowTitle, WindowWidth, WindowHeight);
-      if(status == 2) runGame();
+      if(status == 1) status = menuPage(WindowWidth, WindowHeight);
+      else if(status == 2) status = runGame();
+      else if(status == 3) ;
+      else if(status == 4) ;
+      else break;
    }
-   */
+   
    cpCleanUp(); 
    return 0; 
 }
