@@ -19,6 +19,9 @@
 #define K_RIGHT SDLK_RIGHT
 #define K_KP_1 SDLK_KP_1
 #define K_SPACE SDLK_SPACE
+#define K_RETURN SDLK_RETURN
+#define K_DOWN SDLK_DOWN
+#define K_UP SDLK_UP
 
 typedef TTF_Font *Font;
 typedef Mix_Music *Music;

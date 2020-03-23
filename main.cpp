@@ -180,17 +180,15 @@ void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks)
    if (ball.pos_y + ball.width > WindowHeight) {
       if(--life==0){
          cpPlaySound(end_sound);
-         cpDrawText(255, 255, 0, 400, 350, "จบเกมจบกัน", big_font, 1);
+         cpDrawText(255, 255, 0, 400, 350, "เกมจบแล้ว", big_font, 1);
          cpSwapBuffers();
          waitQuitEvent();
       }else{
          char msg[80], msg2[80];
          //announce remain life
          cpPlaySound(end_sound);
-         sprintf(msg, "เหลือชีวิตอยู่ %d", life);
          sprintf(msg2, "กด spacebar เพื่อเล่นต่อ");
-         cpDrawText(255, 255, 0, 400, 350, msg, big_font, 1);
-         cpDrawText(255, 255, 0, 400, 350+40, msg2, big_font, 1);
+         cpDrawText(255, 255, 255, 400, 350+40, msg2, big_font, 1);
          cpSwapBuffers();
          while (True) {
             cbEventListener(&event);
@@ -237,7 +235,7 @@ void paddleCheckEvent(Object &paddle)
       paddle.pos_x = WindowWidth - paddle.width;
 }
 
-void intialBrick(Object &bricks, double x, double y, 
+void initialBrick(Object &bricks, double x, double y, 
                   int bricks_width, int bricks_height, bool active)
 {
    bricks.pos_x = x;
@@ -250,7 +248,7 @@ void intialBrick(Object &bricks, double x, double y,
 int runGame()
 {
    int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
-   /* resetting value intial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
+   /* resetting value initial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
    char msg[80];
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
@@ -279,7 +277,7 @@ int runGame()
          int bricks_width = 55;
          int bricks_height = 18;
          for (int n = 0; n < n_bricks; n++) {
-               intialBrick(bricks[h][n], x, y, bricks_width, bricks_height, True);
+               initialBrick(bricks[h][n], x, y, bricks_width, bricks_height, True);
                x += bricks[h][n].width;
          }
          y += bricks_height;
@@ -359,14 +357,21 @@ int runGame()
       lap_current++;
    }
 
-   cpCleanUp();
    return 0;
 }
 
 int main(int argc, char *args[])
 {
-   //startPage(WindowTitle, WindowWidth, WindowHeight);
-   runGame();
-   return 0;
+   
+   startPage(WindowTitle, WindowWidth, WindowHeight);
+   /*int status; // Status show current menu that we are
+
+   while(True){
+      status =  startPage(WindowTitle, WindowWidth, WindowHeight);
+      if(status == 2) runGame();
+   }
+   */
+   cpCleanUp(); 
+   return 0; 
 }
 
