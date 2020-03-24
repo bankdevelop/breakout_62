@@ -3,6 +3,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <pthread.h>
+#include <ctime>
 #include "cp_functions.h"
 #include "page_functions.h"
 
@@ -11,21 +12,19 @@
 #define WindowHeight 700
 #define MaxLevel 5
 
-//variable for check my current level
-int level = 1;
-int wantQuit = 0; // use case type key QUIT -- in high function can't out loop just break // so we use variable to quit
 
-// check game running
-bool running;
+int level; //variable for check my current level
+int wantQuit; // use case type key QUIT -- in high function can't out loop just break // so we use variable to quit
+
+int status; // check page we at
+
+bool running; // check game running
 
 //Life
-int life = 3;
+int life;
 
 //inital speed ball and paddle
-float BALL_VEL_Y = (-5*level);
-float PADDLE_SPEED_MOVE = 7*level;
-float PADDLE_SPEED_VECTOR = 1*level;
-
+float BALL_VEL_Y, PADDLE_SPEED_MOVE, PADDLE_SPEED_VECTOR;
 
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
@@ -155,8 +154,12 @@ void waitQuitEvent()
    while (True) {
       cbEventListener(&event);
       if (event.type == QUIT ||
-            event.type == KEYUP && event.key.keysym.sym == K_ESCAPE || event.key.keysym.sym == K_KP_1) {
+            event.key.keysym.sym == K_KP_1) {
          wantQuit = True;
+         running = False;
+         break;
+      } else if (event.type == KEYUP && event.key.keysym.sym == K_SPACE || 
+               event.type == KEYUP && event.key.keysym.sym == K_ESCAPE){
          running = False;
          break;
       }
@@ -209,12 +212,15 @@ void paddleCheckEvent(Object &paddle)
 {
    //check input keyboard
    while (cbEventListener(&event)) {
-      if (event.type == QUIT ||
-         event.type == KEYUP && event.key.keysym.sym == K_ESCAPE) {
+      if (event.type == QUIT) {
          wantQuit = True;
          running = False;
          break;
+      }else if(event.type == KEYUP && event.key.keysym.sym == K_ESCAPE){
+         running = False;
+         break;
       }
+      
       if (event.type == KEYDOWN) {
          if (event.key.keysym.sym == K_LEFT)
             paddle.vel_x -= PADDLE_SPEED_VECTOR;
@@ -251,7 +257,15 @@ void initialBrick(Object &bricks, double x, double y,
 int runGame()
 {
    int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
-   /* resetting value initial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
+
+   //inital start value
+   level = 1;
+   wantQuit = 0;
+   life = 3;
+   BALL_VEL_Y = (-5*level);
+   PADDLE_SPEED_MOVE = 7*level;
+   PADDLE_SPEED_VECTOR = 1*level;
+
    char msg[80];
    Object bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
@@ -269,6 +283,7 @@ int runGame()
    //While Loop level -> Check in case we not pass to next level but lose, lap_current and level will not equal
    while(lap_current == level){
 
+      /* resetting value initial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
       //create new bricks
       for(int h = 0, y = 80; h<h_bricks; h++){
          int x = -10;
@@ -312,7 +327,7 @@ int runGame()
          //check END game
          endGame(ball, n_hits, n_bricks, h_bricks);
          cpSwapBuffers();
-         
+
          //paddle check event
          paddleCheckEvent(paddle);
 
@@ -365,13 +380,15 @@ int main(int argc, char *args[])
       exit(1);
    }
 
-   int status = 1; // Status show current menu that we are
+   status = 1; // 1 is menu page
 
    while(True){
-      if(status == 1) status = menuPage(WindowWidth, WindowHeight);
-      else if(status == 2) status = runGame();
-      else if(status == 3) ;
-      else if(status == 4) ;
+      if(status == 1) {
+         status = menuPage(WindowWidth, WindowHeight);
+         if( status == 2 ) 
+            status = runGame();
+      }else if(status == 3) 
+         status = scorePage(WindowWidth, WindowHeight);
       else break;
    }
    

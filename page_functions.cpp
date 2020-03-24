@@ -1,16 +1,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
-#include <unistd.h>
-#include <pthread.h>
 #include "cp_functions.h"
+using namespace std;
 
 Texture background_texture_menu;
 Event eventPage;
 Sound end_sound2;
 Font big_font2;
-int runningMenuPage = 1;
-int currentMenu = 2;
+
+char textMenu[4][80], textScore[10][80];
+
+int runningMenuPage;
+int runningScorePage;
+int currentMenu;
 /* 2 = Start game
    3 = See Score
    4 = Shop
@@ -19,17 +22,30 @@ int currentMenu = 2;
    speical number 1 is menu page
 */
 
-void setQuit(){
+//other variable
+int countOutput;
+FILE *readScore;
+
+void setQuit(int &runningPage){
    currentMenu = 0;
-   runningMenuPage = 0;
+   runningPage = 0;
 }
+
+
+int initTemplate(){
+   end_sound2 = cpLoadSound("theEnd.wav");
+   background_texture_menu = cpLoadTexture("background.png");
+   big_font2 = cpLoadFont("THSarabun.ttf", 60);
+   
+   return background_texture_menu && big_font2;
+}
+
 
 int menuPage(int WindowWidth, int WindowHeight){
 
-   end_sound2 = cpLoadSound("theEnd.wav");
-   big_font2 = cpLoadFont("THSarabun.ttf", 60);
-   background_texture_menu = cpLoadTexture("background.png");
-   char textMenu1[80], textMenu2[80], textMenu3[80], textMenu4[80];
+   initTemplate();
+   runningMenuPage = 1;
+   currentMenu = 2;
 
    while(runningMenuPage){
       cpClearScreen();
@@ -41,28 +57,26 @@ int menuPage(int WindowWidth, int WindowHeight){
                cpPlaySound(end_sound2);
                runningMenuPage = 0;
             } else if (eventPage.key.keysym.sym == K_DOWN) {
-               if( ++currentMenu > 5 ) currentMenu = 2;
+               if( ++currentMenu > 4 ) currentMenu = 2;
             } else if (eventPage.key.keysym.sym == K_UP) {
-               if( --currentMenu < 2 ) currentMenu = 5;
+               if( --currentMenu < 2 ) currentMenu = 4;
             } else if (eventPage.key.keysym.sym == K_ESCAPE) {
-               setQuit();
+               setQuit(runningMenuPage);
             } 
          } else {
             if (eventPage.type == QUIT) {
-               setQuit();
+               setQuit(runningMenuPage);
             }
          }
       }
       
       //write text
-      sprintf(textMenu1, "Start Game");
-      sprintf(textMenu2, "See Record");
-      sprintf(textMenu3, "Shop Menu");
-      sprintf(textMenu4, "exit");
-      cpDrawText(255, 255, (currentMenu==2?0:250), 400, 350, textMenu1, big_font2, 1);
-      cpDrawText(255, 255, (currentMenu==3?0:250), 400, 350+40, textMenu2, big_font2, 1); 
-      cpDrawText(255, 255, (currentMenu==4?0:250), 400, 350+80, textMenu3, big_font2, 1);
-      cpDrawText(255, 255, (currentMenu==5?0:250), 400, 350+120, textMenu4, big_font2, 1);  
+      sprintf(textMenu[0], "Start Game");
+      sprintf(textMenu[1], "See Record");
+      sprintf(textMenu[2], "exit");
+      cpDrawText(255, 255, (currentMenu==2?0:250), 400, 350, textMenu[0], big_font2, 1);
+      cpDrawText(255, 255, (currentMenu==3?0:250), 400, 350+40, textMenu[1], big_font2, 1); 
+      cpDrawText(255, 255, (currentMenu==4?0:250), 400, 350+80, textMenu[2], big_font2, 1);
       cpSwapBuffers(); 
       cpDelay(10);
    } 
@@ -70,6 +84,42 @@ int menuPage(int WindowWidth, int WindowHeight){
    return currentMenu;
 }
 
-int scorePage(){
-   return 0;
+int scorePage(int WindowWidth,int  WindowHeight){
+
+   initTemplate();
+   runningScorePage = 1;
+   readScore = fopen("data/score.txt", "r");;
+
+   for(int count=0; count<10; count++) {
+      //readScore.read(textScore[count], 80);
+      fgets(textScore[count], 80, readScore);
+   }
+   fclose(readScore);
+
+   while(runningScorePage){
+      cpClearScreen();
+      cpDrawTexture(255, 255, 255,
+                  0, 0, WindowWidth, WindowHeight, background_texture_menu);
+      
+      cpDrawText(255, 255, 255, 400, 120, "คะแนนสูงสุด", big_font2, 1);
+      for(int count=0; count<10; count++) {
+         cpDrawText(255, 255, 255, 400, 160+40*count, textScore[count], big_font2, 1);
+      }
+      cpSwapBuffers();
+
+      while(cbEventListener(&eventPage)){
+         if (eventPage.type == KEYUP){
+            if (eventPage.key.keysym.sym == K_ESCAPE) {
+               setQuit(runningScorePage);
+            } 
+         } else {
+            if (eventPage.type == QUIT) {
+               return 0; 
+            }
+         }
+      }
+      cpDelay(10);
+   } 
+
+   return 1;
 }
