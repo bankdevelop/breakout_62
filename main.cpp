@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
+//c library for use together with cp_function
+#include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <ctime>
+#include <time.h>
 #include "cp_functions.h"
 #include "page_functions.h"
 
@@ -32,7 +35,8 @@ Texture paddle_texture, ball_texture;
 Texture brick_texture, background_texture;
 Font big_font, small_font;
 Event event;
-
+FILE *readScore_main;
+time_t curtime;
 
 //---------------------------------------Class---------------------------------------//
 
@@ -149,6 +153,52 @@ void *ghostBot(void *ptr)
    }
 }
 
+int writeScore(int score){
+   char weekday[10][10], month[10][10], day[10][10], times[10][10], year[10][10], msg[10][80];
+   int scoreGame[10];
+   time(&curtime);
+   readScore_main = fopen(FILE_SCORE, "r");
+
+   for(int count = 0; count<10; count++){
+      fscanf(readScore_main, "%s %s %s %s %s -> %d", &weekday[count], &month[count], &day[count], // 25/03/2020 bug start at fscanf 
+                                                &times[count], &year[count], &scoreGame[count]);
+      if(weekday[count]==NULL) break;
+      strcat(msg[count], weekday[count]);
+      strcat(msg[count], " ");
+      strcat(msg[count], month[count]);
+      strcat(msg[count], " ");
+      strcat(msg[count], day[count]);
+      strcat(msg[count], " ");
+      strcat(msg[count], times[count]);
+      strcat(msg[count], " ");
+      strcat(msg[count], year[count]);
+   }
+   
+   //Sort Score, if Score have more than any tenth.
+   readScore_main = fopen(FILE_SCORE, "w");
+   char str_score[80];
+   sprintf(str_score, "%d", score);
+   for(int count = 0, count2; count < 10 && msg[count]!=NULL ; count++){
+      if(score > scoreGame[count]) {
+         for(count2 = 10-1; count2>=count; count2--){
+            scoreGame[count2] = scoreGame[count2-1];
+            strncpy(msg[count2], msg[count2-1], 24);
+         }
+         scoreGame[count] = score;
+         strncpy(msg[count], ctime(&curtime), 24);
+         break;
+      }
+   }
+
+   //write data back to file
+   for(int count = 0; count < 10 && msg[count]!=NULL ; count++){
+      fprintf(readScore_main ,"%s -> %d\n", msg[count], scoreGame[count]);
+   }
+
+   fclose(readScore_main);
+   return 0; 
+}
+
 void waitQuitEvent()
 {
    while (True) {
@@ -180,12 +230,13 @@ void nextLevel(int &n_hits, int goal)
 }
 
 //checking game ending
-void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks)
+void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks, int score)
 {
    if (ball.pos_y + ball.width > WindowHeight) {
       if(--life==0){
          cpPlaySound(end_sound);
          cpDrawText(255, 255, 0, 400, 350, "เกมจบแล้ว", big_font, 1);
+         writeScore(score);
          cpSwapBuffers();
          waitQuitEvent();
       }else{
@@ -220,7 +271,7 @@ void paddleCheckEvent(Object &paddle)
          running = False;
          break;
       }
-      
+
       if (event.type == KEYDOWN) {
          if (event.key.keysym.sym == K_LEFT)
             paddle.vel_x -= PADDLE_SPEED_VECTOR;
@@ -325,7 +376,7 @@ int runGame()
          cpDrawText(255, 255, 255, 3, 3, msg, small_font, 0);
          
          //check END game
-         endGame(ball, n_hits, n_bricks, h_bricks);
+         endGame(ball, n_hits, n_bricks, h_bricks, score);
          cpSwapBuffers();
 
          //paddle check event
@@ -369,7 +420,6 @@ int runGame()
       }
       lap_current++;
    }
-
    return !wantQuit;
 }
 

@@ -3,3 +3,8 @@ main.o
 cp_functions.o
 page_functions.o
 breakout.exe
+
+
+#vscode
+/.vscode
+test.cpp

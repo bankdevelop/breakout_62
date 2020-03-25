@@ -8,6 +8,7 @@ Texture background_texture_menu;
 Event eventPage;
 Sound end_sound2;
 Font big_font2;
+FILE *readScore;
 
 char textMenu[4][80], textScore[10][80];
 
@@ -24,7 +25,6 @@ int currentMenu;
 
 //other variable
 int countOutput;
-FILE *readScore;
 
 void setQuit(int &runningPage){
    currentMenu = 0;
@@ -88,13 +88,13 @@ int scorePage(int WindowWidth,int  WindowHeight){
 
    initTemplate();
    runningScorePage = 1;
-   readScore = fopen("data/score.txt", "r");;
+   readScore = fopen(FILE_SCORE, "r");
 
-   for(int count=0; count<10; count++) {
-      //readScore.read(textScore[count], 80);
+   for(int count=0, countIndex; count<10; count++) {
       fgets(textScore[count], 80, readScore);
    }
    fclose(readScore);
+
 
    while(runningScorePage){
       cpClearScreen();

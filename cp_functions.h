@@ -23,6 +23,8 @@
 #define K_DOWN SDLK_DOWN
 #define K_UP SDLK_UP
 
+#define FILE_SCORE "data/score.txt"
+
 typedef TTF_Font *Font;
 typedef Mix_Music *Music;
 typedef Mix_Chunk *Sound;
