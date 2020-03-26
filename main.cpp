@@ -35,7 +35,9 @@ float BALL_VEL_Y, PADDLE_SPEED_MOVE, PADDLE_SPEED_VECTOR;
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
 Texture paddle_texture, ball_texture;
-Texture brick_texture_1, brick_texture_2, brick_texture_type_1, background_texture;
+Texture brick_texture_1, brick_texture_2, 
+         brick_texture_type_1, brick_texture_type_2,
+         background_texture;
 Font big_font, small_font;
 Event event;
 FILE *readScore_main;
@@ -119,13 +121,15 @@ int game_init()
    brick_texture_1 = cpLoadTexture("asset/img/brick0.png");
    brick_texture_2 = cpLoadTexture("asset/img/brick.png");
    brick_texture_type_1 = cpLoadTexture("asset/img/brick1.png");
+   brick_texture_type_2 = cpLoadTexture("asset/img/brick2.png");
    background_texture = cpLoadTexture("asset/img/background.png");
 
    big_font = cpLoadFont("asset/font/THSarabun.ttf", 60);
    small_font = cpLoadFont("asset/font/THSarabun.ttf", 30);
 
    return hit_paddle_sound && hit_brick_sound && hit_top_sound && end_sound &&
-      paddle_texture && ball_texture && brick_texture_1 && brick_texture_2 && background_texture &&
+      paddle_texture && ball_texture && brick_texture_1 && brick_texture_type_1 
+      && brick_texture_type_2 && brick_texture_2 && background_texture &&
       big_font && small_font;
 }
 
@@ -209,8 +213,7 @@ void waitQuitEvent()
 {
    while (True) {
       cbEventListener(&event);
-      if (event.type == QUIT ||
-            event.key.keysym.sym == K_KP_1) {
+      if (event.type == QUIT) {
          wantQuit = True;
          running = False;
          break;
@@ -222,7 +225,7 @@ void waitQuitEvent()
    }
 }
 
-void nextLevel(int &n_hits, int goal)
+void nextLevel(int &n_hits, int goal, int score)
 {
    if(n_hits >= goal){
       cpPlaySound(end_sound);
@@ -232,6 +235,17 @@ void nextLevel(int &n_hits, int goal)
       running=False;
    }
    //if go to MaxLevel, End while loop level
+   if(level > MaxLevel) {
+      waitQuitEvent();
+   }
+}
+
+void forceNextLevel(int &n_hits){
+   cpPlaySound(end_sound);
+   n_hits = 0;
+   level++;
+   //running = false for resetgame
+   running=False;
    if(level > MaxLevel) waitQuitEvent();
 }
 
@@ -265,7 +279,7 @@ void endGame(Object &ball, int &n_hits, int n_bricks, int h_bricks, int score)
    }
 }
 
-void paddleCheckEvent(Object &paddle)
+void paddleCheckEvent(Object &paddle, int &n_hits)
 {
    //check input keyboard
    while (cbEventListener(&event)) {
@@ -289,6 +303,8 @@ void paddleCheckEvent(Object &paddle)
             paddle.vel_x = 0;
          if (event.key.keysym.sym == K_RIGHT)
             paddle.vel_x = 0;
+         if (event.key.keysym.sym == K_KP_1)
+            forceNextLevel(n_hits);
       }
    }
    //move paddle
@@ -309,7 +325,7 @@ void initialBrick(Brick &bricks, double x, double y,
    bricks.width = bricks_width;
    bricks.height = bricks_height;
    bricks.type = type;
-   bricks.active = (bricks.type==1)?1:active;
+   bricks.active = (bricks.type>=1)?1:active;
 }
 
 int runGame()
@@ -352,7 +368,8 @@ int runGame()
          
          for (int n = 0; n < n_bricks; n++) {
                randomValue = (10 + rand( ) % 46);
-               initialBrick(bricks[h][n], x, y, bricks_width, bricks_height, (randomValue%2)+1, (level>=2)?randomValue%2:0);
+               initialBrick(bricks[h][n], x, y, bricks_width, bricks_height, (randomValue%2)+1, 
+                           (level==2)?randomValue%2:((level>=3)?randomValue%3:0));
                amountHitLevel+=bricks[h][n].active;
                x += bricks[h][n].width;
          }
@@ -379,7 +396,9 @@ int runGame()
                if (bricks[h][n].active)
                   cpDrawTexture(255, 255, 255,
                               bricks[h][n].pos_x, bricks[h][n].pos_y, bricks[h][n].width, bricks[h][n].height,
-                              bricks[h][n].type==1?brick_texture_type_1:(bricks[h][n].active==2?brick_texture_2:brick_texture_1));
+                              (bricks[h][n].type==1)?brick_texture_type_1:
+                                 (bricks[h][n].type==2)?brick_texture_type_2:
+                                    (bricks[h][n].active==2?brick_texture_2:brick_texture_1));
             }
          }
 
@@ -392,7 +411,7 @@ int runGame()
          cpSwapBuffers();
 
          //paddle check event
-         paddleCheckEvent(paddle);
+         paddleCheckEvent(paddle, n_hits);
 
          //move ball object
          ball.pos_x += ball.vel_x;
@@ -415,8 +434,26 @@ int runGame()
                   bricks[h][n].active--;
                   n_hits++;
                   if(bricks[h][n].type == 1) score += 30;
-                  else score+=10;
-                  nextLevel(n_hits, amountHitLevel);
+                  else if(bricks[h][n].type == 2) {
+                     score+=300;
+                     if(h-1>=0) {
+                        (bricks[h-1][n].active>=1)?(bricks[h-1][n].active--):(bricks[h-1][n].active=0);
+                        n_hits++;
+                     }
+                     if(h+1<h_bricks) {
+                        (bricks[h+1][n].active>=1)?(bricks[h+1][n].active--):(bricks[h+1][n].active=0);
+                        n_hits++;
+                     }
+                     if(n+1<n_bricks) {
+                        (bricks[h][n+1].active>=1)?(bricks[h][n+1].active--):(bricks[h][n+1].active=0);
+                        n_hits++;
+                     }
+                     if(n-1>=0) {
+                        (bricks[h][n-1].active>=1)?(bricks[h][n-1].active--):(bricks[h][n-1].active=0);
+                        n_hits++;
+                     }
+                  }else score+=10;
+                  nextLevel(n_hits, amountHitLevel, score);
                   break;
                }
             }
