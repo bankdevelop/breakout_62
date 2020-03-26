@@ -7,6 +7,7 @@ How to install
 ---------------	
 First step : use this command on terminal
 > make
+
 Second Step : access game via breakout.exe
 
 How to play (Control)
@@ -24,13 +25,20 @@ Feature
 - There is brick, ball and paddle
 - There are speical bricks
     - crack brick -> This brick need ball collide 1 hit before break | give 10 score
-    ![crack brick](/assets/img/brick0.png)
+
+    ![crack brick](https://bitbucket.org/6210406530/breakout62_6210406530/raw/5fad14bf327daa7ea60f2539068533e7466899b0/asset/img/brick0.png)
+    
     - normal brick -> This brick need ball collide 2 hit before break | give 10 score/per hit
-    ![normal brick](/assets/img/brick.png)
+
+    ![normal brick](https://bitbucket.org/6210406530/breakout62_6210406530/raw/5fad14bf327daa7ea60f2539068533e7466899b0/asset/img/brick.png)
+
     - bonus brick -> This brick is the same as crack brick but **give 30 point
-    ![bonus brick](/assets/img/brick1.png)
+
+    ![bonus brick](https://bitbucket.org/6210406530/breakout62_6210406530/raw/5fad14bf327daa7ea60f2539068533e7466899b0/asset/img/brick1.png)
+
     - blackhold brick -> This brick can break near brick | give 300 point
-    ![blackhold brick](/assets/img/brick2.png)
+
+    ![blackhold brick](https://bitbucket.org/6210406530/breakout62_6210406530/raw/5fad14bf327daa7ea60f2539068533e7466899b0/asset/img/brick2.png)
 - Ghost
     - When ball hit ghost, you receive 10000 point
 - There is 5 level
