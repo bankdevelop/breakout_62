@@ -18,7 +18,7 @@ How to play (Control)
 - left arrow, right arrow -> use for move paddle in game
 
 **special key
-- nampad 1 -> use for force to Next Level (use in game)
+- numpad 1 -> use for force to Next Level (use in game)
 
 Feature
 ---------------	
