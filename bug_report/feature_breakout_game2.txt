@@ -1,5 +1,5 @@
 score page - (strolled) -> แก้บัค wierd char ยังไม่ได้
-bricks แปลกๆ
-paddle ยิงได้
-ball หลายลูก
-bot ใช้เธรด
+bricks แปลกๆ (Solve)
+paddle ยิงได้ (Open)
+ball หลายลูก (Open)
+bot ใช้เธรด (Solve)

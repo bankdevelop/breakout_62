@@ -72,10 +72,6 @@ public:
       else
          return True;
    }
-   void move(float x, float y){
-      ;
-   }
-
 };
 
 class Brick: public Object
@@ -137,7 +133,7 @@ int game_init()
 Texture ghost_texture;
 Object ghost = {0, WindowHeight / 2, 0, 0, 50, 50, True};
 int ready_to_swap=1;
-pthread_t ghost_thread;
+pthread_t *ghost_thread;
 
 void *ghostBot(void *ptr)
 {  double timestep=0;
@@ -331,6 +327,7 @@ void initialBrick(Brick &bricks, double x, double y,
 int runGame()
 {
    int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
+   ghost.active = 1;
    amountHitLevel = 0;
 
    //inital start value
@@ -352,7 +349,7 @@ int runGame()
    }
 
    ghost_texture = cpLoadTexture("asset/img/ghost.png");
-   pthread_create(&ghost_thread, NULL, ghostBot, (void *)NULL);
+   pthread_create(ghost_thread, NULL, ghostBot, (void *)NULL);
 
    int lap_current = 1;
    //While Loop level -> Check in case we not pass to next level but lose, lap_current and level will not equal
@@ -386,8 +383,10 @@ int runGame()
                      paddle.pos_x, paddle.pos_y, paddle.width, paddle.height, paddle_texture);
          cpDrawTexture(255, 255, 255,
                      ball.pos_x, ball.pos_y, ball.width, ball.height, ball_texture);
-         cpDrawTexture(255, 255, 255,
-                     ghost.pos_x, ghost.pos_y, ghost.width, ghost.height, ghost_texture);
+
+         if(ghost.active)
+               cpDrawTexture(255, 255, 255,
+                              ghost.pos_x, ghost.pos_y, ghost.width, ghost.height, ghost_texture);
          ready_to_swap = 1;
 
          //draw brick Texture
@@ -466,10 +465,18 @@ int runGame()
             ball.vel_y = -ball.vel_y;
          }
 
+         //check ball hit ghost
+         if (ball.collide(ghost) && ghost.active) {
+               cpPlaySound(hit_top_sound);
+               ghost.active = 0;
+               score += 10000;
+         }
+
          cpDelay(10);
       }
       lap_current++;
    }
+      free(ghost_thread);
    return !wantQuit;
 }
 
