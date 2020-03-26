@@ -1,0 +1,2 @@
+กดเข้าออกระหว่าง menupage กับ rungame 2 รอบ Segmentation fault - (Resolve)
+- Bug นี้หายตอนเปลี่ยน Cpload image เป็น brick0.png กับ brick.png ที่ภาพแสดงได้ปกติ --> ก่อนหน้านี้ใช้ brick3.png

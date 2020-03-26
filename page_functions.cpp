@@ -4,9 +4,9 @@
 #include "cp_functions.h"
 using namespace std;
 
-Texture background_texture_menu;
+Texture background_texture_menu, logo;
 Event eventPage;
-Sound end_sound2;
+Sound end_sound2, menu_sound;
 Font big_font2;
 FILE *readScore;
 
@@ -33,9 +33,13 @@ void setQuit(int &runningPage){
 
 
 int initTemplate(){
-   end_sound2 = cpLoadSound("theEnd.wav");
-   background_texture_menu = cpLoadTexture("background.png");
-   big_font2 = cpLoadFont("THSarabun.ttf", 60);
+   end_sound2 = cpLoadSound("asset/sound/theEnd.wav");
+   menu_sound = cpLoadSound("asset/sound/hitUp.wav");
+
+   background_texture_menu = cpLoadTexture("asset/img/background.png");
+   logo = cpLoadTexture("asset/img/logo.png");
+
+   big_font2 = cpLoadFont("asset/font/THSarabun.ttf", 60);
    
    return background_texture_menu && big_font2;
 }
@@ -57,8 +61,10 @@ int menuPage(int WindowWidth, int WindowHeight){
                cpPlaySound(end_sound2);
                runningMenuPage = 0;
             } else if (eventPage.key.keysym.sym == K_DOWN) {
+               cpPlaySound(menu_sound);
                if( ++currentMenu > 4 ) currentMenu = 2;
             } else if (eventPage.key.keysym.sym == K_UP) {
+               cpPlaySound(menu_sound);
                if( --currentMenu < 2 ) currentMenu = 4;
             } else if (eventPage.key.keysym.sym == K_ESCAPE) {
                setQuit(runningMenuPage);
@@ -71,6 +77,8 @@ int menuPage(int WindowWidth, int WindowHeight){
       }
       
       //write text
+      cpDrawTexture(255, 255, 255,
+                     200, 200, 398, 107, logo);
       sprintf(textMenu[0], "Start Game");
       sprintf(textMenu[1], "See Record");
       sprintf(textMenu[2], "exit");
@@ -101,7 +109,7 @@ int scorePage(int WindowWidth,int  WindowHeight){
       cpDrawTexture(255, 255, 255,
                   0, 0, WindowWidth, WindowHeight, background_texture_menu);
       
-      cpDrawText(255, 255, 255, 400, 120, "คะแนนสูงสุด", big_font2, 1);
+      cpDrawText(250, 155, 255, 400, 100, "คะแนนสูงสุด", big_font2, 1);
       for(int count=0; count<10; count++) {
          cpDrawText(255, 255, 255, 400, 160+40*count, textScore[count], big_font2, 1);
       }
@@ -109,7 +117,7 @@ int scorePage(int WindowWidth,int  WindowHeight){
 
       while(cbEventListener(&eventPage)){
          if (eventPage.type == KEYUP){
-            if (eventPage.key.keysym.sym == K_ESCAPE) {
+            if (eventPage.key.keysym.sym == K_ESCAPE || eventPage.key.keysym.sym == K_SPACE) {
                setQuit(runningScorePage);
             } 
          } else {

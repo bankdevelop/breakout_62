@@ -23,6 +23,9 @@ int status; // check page we at
 
 bool running; // check game running
 
+int amountHitLevel; // use for check if amountHitLevel = nHit so brick run out; can go to nextLevel
+int randomValue;
+
 //Life
 int life;
 
@@ -32,7 +35,7 @@ float BALL_VEL_Y, PADDLE_SPEED_MOVE, PADDLE_SPEED_VECTOR;
 Sound hit_paddle_sound, hit_brick_sound;
 Sound hit_top_sound, end_sound;
 Texture paddle_texture, ball_texture;
-Texture brick_texture, background_texture;
+Texture brick_texture_1, brick_texture_2, brick_texture_type_1, background_texture;
 Font big_font, small_font;
 Event event;
 FILE *readScore_main;
@@ -75,14 +78,15 @@ public:
 
 class Brick: public Object
 {
+public:
    int type = 0;
-
    Brick(){
       Object(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
    }
    Brick(float in_pos_x, float in_pos_y, float in_vel_x, float in_vel_y, 
-         float in_width, float in_height, int in_active) {
+         float in_width, float in_height, int in_active, int type) {
       Object(in_pos_x, in_pos_y, in_vel_x, in_vel_y, in_width, in_height, in_active);
+      this->type = type;
    }
 
    bool collide(Object b)
@@ -105,21 +109,23 @@ class Brick: public Object
 // Initial routine to load sounds, textures, and fonts.
 int game_init()
 {
-   hit_paddle_sound = cpLoadSound("hitDown.wav");
-   hit_brick_sound = cpLoadSound("hitUp.wav");
-   hit_top_sound = cpLoadSound("hitTop.wav");
-   end_sound = cpLoadSound("theEnd.wav");
+   hit_paddle_sound = cpLoadSound("asset/sound/hitDown.wav");
+   hit_brick_sound = cpLoadSound("asset/sound/hitUp.wav");
+   hit_top_sound = cpLoadSound("asset/sound/hitTop.wav");
+   end_sound = cpLoadSound("asset/sound/theEnd.wav");
 
-   paddle_texture = cpLoadTexture("paddle.png");
-   ball_texture = cpLoadTexture("ball.png");
-   brick_texture = cpLoadTexture("brick.png");
-   background_texture = cpLoadTexture("background.png");
+   paddle_texture = cpLoadTexture("asset/img/paddle.png");
+   ball_texture = cpLoadTexture("asset/img/ball.png");
+   brick_texture_1 = cpLoadTexture("asset/img/brick0.png");
+   brick_texture_2 = cpLoadTexture("asset/img/brick.png");
+   brick_texture_type_1 = cpLoadTexture("asset/img/brick1.png");
+   background_texture = cpLoadTexture("asset/img/background.png");
 
-   big_font = cpLoadFont("THSarabun.ttf", 60);
-   small_font = cpLoadFont("THSarabun.ttf", 30);
+   big_font = cpLoadFont("asset/font/THSarabun.ttf", 60);
+   small_font = cpLoadFont("asset/font/THSarabun.ttf", 30);
 
    return hit_paddle_sound && hit_brick_sound && hit_top_sound && end_sound &&
-      paddle_texture && ball_texture && brick_texture && background_texture &&
+      paddle_texture && ball_texture && brick_texture_1 && brick_texture_2 && background_texture &&
       big_font && small_font;
 }
 
@@ -295,19 +301,21 @@ void paddleCheckEvent(Object &paddle)
       paddle.pos_x = WindowWidth - paddle.width;
 }
 
-void initialBrick(Object &bricks, double x, double y, 
-                  int bricks_width, int bricks_height, bool active)
+void initialBrick(Brick &bricks, double x, double y, 
+                  int bricks_width, int bricks_height, int active, int type)
 {
    bricks.pos_x = x;
    bricks.pos_y = y;
    bricks.width = bricks_width;
    bricks.height = bricks_height;
-   bricks.active = active;
+   bricks.type = type;
+   bricks.active = (bricks.type==1)?1:active;
 }
 
 int runGame()
 {
    int h_bricks = 8, n_bricks = 15, n_hits = 0, score = 0;
+   amountHitLevel = 0;
 
    //inital start value
    level = 1;
@@ -318,7 +326,7 @@ int runGame()
    PADDLE_SPEED_VECTOR = 1*level;
 
    char msg[80];
-   Object bricks[h_bricks][n_bricks];
+   Brick bricks[h_bricks][n_bricks];
    Object ball = {WindowWidth / 2 - 12, 350, 0, BALL_VEL_Y, 24, 24, True};
    Object paddle = {WindowWidth / 2 - 62, WindowHeight - 50, 0, 0, 124, 18, True};
 
@@ -327,7 +335,7 @@ int runGame()
       exit(1);
    }
 
-   ghost_texture = cpLoadTexture("ghost.png");
+   ghost_texture = cpLoadTexture("asset/img/ghost.png");
    pthread_create(&ghost_thread, NULL, ghostBot, (void *)NULL);
 
    int lap_current = 1;
@@ -336,12 +344,16 @@ int runGame()
 
       /* resetting value initial */ BALL_VEL_Y = (-5*level), PADDLE_SPEED_MOVE = 7*level, PADDLE_SPEED_VECTOR = 1*level;
       //create new bricks
-      for(int h = 0, y = 80; h<h_bricks; h++){
+      srand(time(NULL));
+      for(int h = 0, y = 80; h<h_bricks; h++){  
          int x = -10;
          int bricks_width = 55;
          int bricks_height = 18;
+         
          for (int n = 0; n < n_bricks; n++) {
-               initialBrick(bricks[h][n], x, y, bricks_width, bricks_height, True);
+               randomValue = (10 + rand( ) % 46);
+               initialBrick(bricks[h][n], x, y, bricks_width, bricks_height, (randomValue%2)+1, (level>=2)?randomValue%2:0);
+               amountHitLevel+=bricks[h][n].active;
                x += bricks[h][n].width;
          }
          y += bricks_height;
@@ -367,7 +379,7 @@ int runGame()
                if (bricks[h][n].active)
                   cpDrawTexture(255, 255, 255,
                               bricks[h][n].pos_x, bricks[h][n].pos_y, bricks[h][n].width, bricks[h][n].height,
-                              brick_texture);
+                              bricks[h][n].type==1?brick_texture_type_1:(bricks[h][n].active==2?brick_texture_2:brick_texture_1));
             }
          }
 
@@ -400,10 +412,11 @@ int runGame()
                if (bricks[h][n].active && ball.collide(bricks[h][n])) {
                   cpPlaySound(hit_brick_sound);
                   ball.vel_y = -ball.vel_y;
-                  bricks[h][n].active = False;
+                  bricks[h][n].active--;
                   n_hits++;
-                  score += 10;
-                  nextLevel(n_hits, (n_bricks*h_bricks));
+                  if(bricks[h][n].type == 1) score += 30;
+                  else score+=10;
+                  nextLevel(n_hits, amountHitLevel);
                   break;
                }
             }
